@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+
+<html lang="da">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BBR PDF Data Ekstraktor</title>
+<style>
+:root{
+  --bg:#f6f7fb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --primary:#2563eb;
+  --primary2:#1d4ed8;
+  --ok:#16a34a;
+  --warn:#f59e0b;
+  --err:#dc2626;
+  --shadow:0 10px 25px rgba(0,0,0,.08);
+  --radius:18px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;
+  /* Behold den oprindelige baggrundsfarve (fra den gamle version) */
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color:var(--text);
+}
+.container{
+  max-width:980px;
+  margin:18px auto 40px;
+  padding:0 14px;
+}
+
+.header{
+  text-align:center;
+  color:#fff;
+  margin: 10px 0 18px;
+}
+.header h1{
+  font-size: 2.2rem;
+  margin: 0 0 6px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.18);
+}
+.header p{
+  margin:0;
+  font-size: 1.05rem;
+  opacity: .92;
+}
+.header .meta{
+  margin-top:10px;
+  font-size: .95rem;
+  opacity: .88;
+}
+.header .meta span{font-weight:800}
+
+.topbar{
+  /* Match den gamle farveprofil */
+  background:linear-gradient(135deg,#667eea 0%, #764ba2 100%);
+  color:#fff;
+  border-radius:22px;
+  padding:18px 18px;
+  box-shadow:var(--shadow);
+}
+.topbar-row{
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+.topbar h1{
+  margin:0;
+  font-size:22px;
+  line-height:1.2;
+}
+.topbar .sub{
+  margin-top:6px;
+  color:rgba(255,255,255,.88);
+  font-size:13px;
+}
+.badges{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
+}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.22);
+  font-size:13px;
+  white-space:nowrap;
+}
+.badge strong{font-weight:800}
+.cards{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  margin-top:14px;
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:16px;
+}
+.card h2{
+  margin:0;
+  /* Headings: slightly larger, but not bold */
+  font-size:18px;
+  font-weight:500;
+  letter-spacing:0.1px;
+}
+.card .hint{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:13px;
+}
+.row{
+  display:flex;
+  gap:10px;
+  align-items:stretch;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.input{
+  flex:1 1 320px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.label{font-size:13px;color:var(--muted)}
+input[type="text"]{
+  width:100%;
+  padding:12px 12px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  font-size:14px;
+  outline:none;
+}
+input[type="text"]:focus{border-color:rgba(37,99,235,.55); box-shadow:0 0 0 4px rgba(37,99,235,.12)}
+
+/* OIS link line: input + buttons on same baseline */
+.ois-inline{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.ois-inline input[type="text"]{
+  flex:1 1 420px;
+  min-width:260px;
+}
+.ois-inline .btn{
+  white-space:nowrap;
+}
+.btn{
+  background:#fff;
+  color:#111827;
+  border:1px solid var(--border);
+  padding:12px 14px;
+  border-radius:14px;
+  font-weight:400; /* ikke fed – som den oprindelige */
+  cursor:pointer;
+  font-size:14px;
+  transition:background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+/* "Primær" knap: hvid som standard, farves ved hover */
+.btn-primary{
+  background:#fff;
+  color:var(--primary);
+  border:1px solid rgba(37,99,235,.45);
+}
+.btn-primary:hover{
+  background:var(--primary);
+  color:#fff;
+  border-color:var(--primary);
+  box-shadow:0 8px 22px rgba(37,99,235,.22);
+}
+
+/* Sekundær knap: hvid/grå hover */
+.btn-secondary{
+  background:#fff;
+  color:#111827;
+  border:1px solid var(--border);
+}
+.btn-secondary:hover{background:#f3f4f6}
+.btn:disabled{opacity:.55; cursor:not-allowed}
+
+.uploader{
+  margin-top:12px;
+}
+.uploader-head{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+.upload-area{
+  border:3px dashed #d0d0d0;
+  border-radius:12px;
+  padding:30px 18px; /* lidt lavere end original */
+  text-align:center;
+  cursor:pointer;
+  transition:all .3s;
+  background:#fafafa;
+  margin-top:10px;
+}
+.upload-area:hover{
+  border-color:#667eea;
+  background:#f8f9ff;
+}
+.upload-area.dragover{
+  border-color:#667eea;
+  background:#f0f4ff;
+  transform:scale(1.01);
+}
+.upload-icon{font-size:3.2rem; margin-bottom:10px}
+.upload-text{font-size:1.05rem; color:#555; margin-bottom:6px}
+.upload-subtext{color:#888; font-size:.95rem}
+
+.file-list{
+  margin-top:10px;
+  font-size:13px;
+  color:var(--muted);
+}
+.process-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.process-btn{
+  background:#fff;
+  color:var(--primary);
+  border:1px solid rgba(37,99,235,.45);
+  padding:12px 14px;
+  border-radius:14px;
+  font-weight:400;
+  cursor:pointer;
+  transition:background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.process-btn:hover{
+  background:var(--primary);
+  color:#fff;
+  border-color:var(--primary);
+  box-shadow:0 8px 22px rgba(37,99,235,.22);
+}
+.process-btn:disabled{opacity:.5; cursor:not-allowed}
+
+.progress{margin-top:10px; display:none}
+.progress-bar{height:10px; background:#eef2ff; border-radius:999px; overflow:hidden}
+.progress-fill{height:100%; width:0%; background:var(--primary)}
+.progress-text{margin-top:8px; font-size:13px; color:var(--muted)}
+
+.section-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-top:12px;
+}
+@media (min-width: 860px){
+  .section-grid{grid-template-columns:1fr 1fr}
+}
+.group{
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:12px;
+  background:#fff;
+}
+.group h3{margin:0; font-size:14px}
+.group .subhint{margin-top:6px; font-size:12px; color:var(--muted)}
+.checks{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.check{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding:8px 10px;
+  border-radius:14px;
+  border:1px solid #f3f4f6;
+  background:#fafafa;
+}
+.check input{margin-top:3px}
+.check label{font-size:14px}
+.mini-actions{
+  margin-top:10px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.mini-link{
+  background:transparent;
+  border:0;
+  color:var(--primary);
+  font-weight:800;
+  cursor:pointer;
+  padding:0;
+}
+.mini-link:hover{text-decoration:underline}
+
+.details{
+  margin-top:12px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+}
+details summary{
+  list-style:none;
+  cursor:pointer;
+  padding:12px 12px;
+  background:#fff;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+details summary::-webkit-details-marker{display:none}
+.details-body{
+  padding:12px;
+  background:#fafafa;
+  border-top:1px solid var(--border);
+  color:var(--muted);
+  font-size:13px;
+}
+
+.result-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.actions .btn{padding:10px 12px}
+
+.modal{display:none; position:fixed; inset:0; background:rgba(17,24,39,.55); padding:16px; z-index:999}
+.modal.show{display:block}
+.modal-content{
+  background:#fff;
+  border-radius:20px;
+  max-width:980px;
+  margin:0 auto;
+  height:calc(100vh - 32px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.modal-header{
+  padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.modal-header h2{margin:0; font-size:16px}
+.modal-close{
+  font-size:24px;
+  cursor:pointer;
+  color:var(--muted);
+}
+.modal-body{
+  padding:14px 16px;
+  overflow:auto;
+  flex:1;
+}
+.sheet-tabs{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.sheet-tab{
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:999px;
+  padding:8px 10px;
+  cursor:pointer;
+  font-weight:800;
+  font-size:13px;
+}
+.sheet-tab.active{background:#eef2ff; border-color:#c7d2fe}
+.modal-footer{
+  padding:12px 16px;
+  border-top:1px solid var(--border);
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+.modal-btn{
+  border:0;
+  padding:10px 12px;
+  border-radius:14px;
+  font-weight:900;
+  cursor:pointer;
+}
+.modal-btn-cancel{background:#f3f4f6}
+.modal-btn-primary{background:var(--primary); color:#fff}
+
+.table-wrap{overflow:auto; border:1px solid var(--border); border-radius:14px; background:#fff}
+table{border-collapse:collapse; width:100%; font-size:13px}
+th,td{border-bottom:1px solid #f3f4f6; padding:10px 10px; text-align:left; white-space:nowrap}
+th{background:#fafafa; position:sticky; top:0; z-index:1}
+.status{
+  margin-top:12px;
+  padding:10px 12px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--muted);
+  font-size:13px;
+  display:none;
+}
+
+.columns-grid{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.column-checkbox{
+  display:flex; gap:10px; align-items:flex-start;
+  padding:8px 10px; border-radius:14px;
+  border:1px solid #f3f4f6; background:#fafafa;
+  cursor:pointer;
+}
+.column-checkbox input{margin-top:3px}
+.column-checkbox label{font-size:14px; cursor:pointer}
+.section-title{margin:0}
+
+.status.info{display:block;color:#374151;background:#fff}
+.status.success{display:block;border-color:rgba(22,163,74,.25);background:rgba(22,163,74,.08);color:#166534}
+.status.warning{display:block;border-color:rgba(245,158,11,.25);background:rgba(245,158,11,.10);color:#92400e}
+.status.error{display:block;border-color:rgba(220,38,38,.25);background:rgba(220,38,38,.10);color:#991b1b}
+
+
+.uploader-title{font-weight:600; font-size:1.05rem;}
+/* Dropdown (details) should not look overly bold */
+.details summary{
+  font-weight:600;
+}
+.details summary::-webkit-details-marker{display:none;}
+.details summary{
+  list-style:none;
+}
+.details-muted{
+  color:var(--muted);
+  font-weight:400;
+  margin-left:6px;
+}
+
+
+/* Preview tab content visibility */
+.preview-tabs { display:flex; gap:10px; flex-wrap:wrap; margin: 12px 0 14px; }
+.preview-tabs button, .sheet-tab { border:1px solid #d4d9ff; background:#fff; padding:8px 14px; border-radius:999px; cursor:pointer; font-weight:400; }
+.preview-tabs button, .sheet-tab.active { background:#eef1ff; }
+.sheet-content { display:none; }
+.sheet-content.active { display:block; }
+/* Make preview table area nicer */
+.preview-content { max-height: 65vh; overflow:auto; border-top:1px solid #eee; padding-top: 6px; }
+.preview-content table { width:100%; border-collapse:collapse; }
+.preview-content th { position: sticky; top: 0; background:#fafafa; z-index:1; }
+.preview-content th, .preview-content td { padding:10px 12px; border-bottom:1px solid #eee; font-size: 13px; }
+.preview-content tr:nth-child(even) td { background:#fcfcff; }
+</style>
+
+  <!-- Libraries (kept from the original working version) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // pdf.js worker (must be set after pdfjsLib is available)
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📄 BBR Udtræk</h1>
+    <p>Indsæt OIS-link eller upload en BBR PDF. Vælg kolonner og download til Excel.</p>
+    <div class="meta">Adresse: <span id="addressBadge">Ukendt</span> &nbsp;•&nbsp; Status: <span id="statusBadge">Klar</span></div>
+  </div>
+
+  <div class="cards">
+
+    <!-- Step 1 -->
+    <div class="card" id="step1">
+      <h2>1) Hent PDF fra OIS</h2>
+      <div class="hint">Indsæt et OIS-link (fx <code>/search/10171611/...</code>). Alternativt kan du uploade en PDF manuelt.</div>
+
+      <div class="input">
+        <div class="label">OIS-link</div>
+        <div class="ois-inline">
+          <input id="oisLinkInput" type="text" placeholder="Indsæt OIS-link her…" />
+          <button id="oisFetchExtractBtn" type="button" class="btn btn-primary">Indlæs</button>
+          <button id="oisOpenPdfBtn" type="button" class="btn btn-secondary">Åbn PDF i ny fane</button>
+        </div>
+        <div id="oisHint" class="hint" style="margin-top:6px;"></div>
+      </div>
+
+      <div class="uploader">
+        <div class="uploader-head">
+          <div>
+            <div class="uploader-title">Alternativ: Upload PDF</div>
+            <div class="hint">Hvis automatisk hentning fejler, så upload PDF’en her.</div>
+          </div>
+          <!-- Fjernet "Vælg PDF-fil" knap: upload-boksen kan klikkes -->
+          <input id="fileInput" type="file" multiple style="display:none" />
+        </div>
+
+        <div id="uploadArea" class="upload-area" role="button" tabindex="0" aria-label="Upload PDF">
+          <div class="upload-icon">📁</div>
+          <div class="upload-text">Træk og slip PDF-filer her</div>
+          <div class="upload-subtext">eller klik for at vælge filer</div>
+        </div>
+
+        <div class="file-list" id="fileList"></div>
+<div class="progress" id="progress">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <div class="progress-text" id="progressText"></div>
+        </div>
+
+        <div class="status" id="status"></div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="card" id="step2">
+      <h2>2) Vælg hvad der skal med</h2>
+      <div class="hint">Arealer kan summeres. “Anden data” bliver ikke summeret og skjules på Samlet.</div>
+
+      <div class="section-grid">
+        <div class="group">
+          <h3>Arealer</h3>
+          <div class="subhint">Typisk det vigtigste. Summeres i totaler.</div>
+          <div class="checks" id="columnsGrid">
+            <div class="column-checkbox" onclick="toggleCheckbox('col1')">
+<input checked="" id="col1" type="checkbox" value="Samlet bygningsareal"/>
+<label for="col1">Samlet bygningsareal</label>
+</div>
+<div class="column-checkbox" onclick="toggleCheckbox('col2')">
+<input checked="" id="col2" type="checkbox" value="Samlet kælderareal"/>
+<label for="col2">Samlet kælderareal</label>
+</div>
+<div class="column-checkbox" onclick="toggleCheckbox('col3')">
+<input checked="" id="col3" type="checkbox" value="Samlet tagetageareal"/>
+<label for="col3">Samlet tagetageareal</label>
+</div>
+<div class="column-checkbox" onclick="toggleCheckbox('col4')">
+<input id="col4" type="checkbox" value="Heraf udnyttet tagetage"/>
+<label for="col4">Heraf udnyttet tagetage</label>
+</div>
+<div class="column-checkbox" onclick="toggleCheckbox('col5')">
+<input checked="" id="col5" type="checkbox" value="Samlet andet areal"/>
+<label for="col5">Samlet andet areal</label>
+</div>
+<div class="column-checkbox" onclick="toggleCheckbox('col6')">
+<input checked="" id="col6" type="checkbox" value="Bebygget areal"/>
+<label for="col6">Bebygget areal (bruges kun hvis andre ikke er udfyldt)</label>
+</div>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>Anden data</h3>
+          <div class="subhint">Vises pr. bygning, men bliver ikke summeret.</div>
+          <div class="checks" id="otherColumnsGrid">
+            <div class="column-checkbox" onclick="toggleCheckbox('col7')">
+<input id="col7" type="checkbox" value="Opførelsesår"/>
+<label for="col7">Opførelsesår</label>
+</div>
+<div class="column-checkbox" onclick="toggleCheckbox('col8')">
+<input id="col8" type="checkbox" value="Antal etager u. kælder &amp; tagetage"/>
+<label for="col8">Antal etager u. kælder &amp; tagetage</label>
+</div>
+<div class="column-checkbox" onclick="toggleCheckbox('col9')">
+<input id="col9" type="checkbox" value="Ydervæggens materiale"/>
+<label for="col9">Ydervæggens materiale</label>
+</div>
+<div class="column-checkbox" onclick="toggleCheckbox('col10')">
+<input id="col10" type="checkbox" value="Tagdækningsmateriale"/>
+<label for="col10">Tagdækningsmateriale</label>
+</div>
+
+<div class="column-checkbox" onclick="toggleCheckbox('col11')">
+<input id="col11" type="checkbox" value="Ejendomsnummer (BFE-nr.)"/>
+<label for="col11">Ejendomsnummer (BFE-nr.)</label>
+</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="details">
+        <details>
+          <summary>Fejl &amp; kvalitet <span class="details-muted">(fold ud)</span></summary>
+          <div class="details-body">
+            <div style="margin-bottom:10px;">Brug kun hvis noget ser forkert ud.</div>
+            <div class="checks" style="gap:10px;">
+              <div class="check">
+                <input id="qWarn" type="checkbox" />
+                <div>
+                  <label for="qWarn"><strong>Advarsler</strong></label>
+                  <div class="subhint">Tilføj en kolonne med korte advarsler pr. bygning.</div>
+                </div>
+              </div>
+              <div class="check">
+                <input id="qConf" type="checkbox" />
+                <div>
+                  <label for="qConf"><strong>Pålidelighed (0–100)</strong></label>
+                  <div class="subhint">Giver en hurtig indikation af hvor “sikker” udtrækningen er.</div>
+                </div>
+              </div>
+              <div class="check">
+                <input id="debugConsole" type="checkbox" />
+                <div>
+                  <label for="debugConsole"><strong>Debug i konsollen</strong></label>
+                  <div class="subhint">Viser ekstra detaljer (kræver F12).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="card" id="step3">
+      <div class="result-head">
+        <div>
+          <h2>3) Resultat</h2>
+          <div class="hint">Brug “Preview data” for at se tabs og download Excel.</div>
+        </div>
+        <div class="actions">
+          <button class="process-btn" id="processBtn" disabled>Preview data</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal" id="previewModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Preview</h2>
+      <span class="modal-close" onclick="closePreview()">×</span>
+    </div>
+    <div class="modal-body">
+      <div class="sheet-tabs" id="sheetTabs"></div>
+      <div id="sheetContents"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePreview()">Luk</button>
+      <button class="btn btn-primary" onclick="downloadExcel()">Download Excel</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+        // Initialize PDF.js (guarded: many corporate networks block CDNs)
+        // If pdfjsLib isn't available, we still want the UI/uploader to work and show a clear error on processing.
+        if (window.pdfjsLib && window.pdfjsLib.GlobalWorkerOptions) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        } else {
+            console.warn('pdfjsLib not loaded. If you are on a corporate network, CDNs may be blocked.');
+        }
+
+        // State management
+        let selectedFiles = [];
+        let processedData = null; // Store processed data for preview and download
+
+        // --- Text normalization (handles new PDF layout where letters/numbers are split with spaces) ---
+        function normalizeText(raw) {
+            if (!raw) return '';
+            let t = raw;
+
+            // Fix common unit split: "m 2" -> "m2"
+            t = t.replace(/m\s+2/g, 'm2');
+
+            // Merge spaced digits: "1 0 9 6" -> "1096"
+            t = t.replace(/\b(?:\d\s+){1,}\d\b/g, (m) => m.replace(/\s+/g, ''));
+
+            // Merge spaced letters for Danish alphabet (words split into single letters)
+            // Example: "B y g n i n g e n s" -> "Bygningens"
+            t = t.replace(/\b(?:[A-Za-zÆØÅæøå]\s+){2,}[A-Za-zÆØÅæøå]\b/g, (m) => m.replace(/\s+/g, ''));
+
+            // Collapse multiple spaces/newlines
+            t = t.replace(/\s+/g, ' ').trim();
+            return t;
+        }
+
+
+
+        // Extract Ejendomsnummer (BFE-nr.) (property-level)
+        function extractBFE(text) {
+            if (!text) return undefined;
+            // Try with spaces
+            let m = text.match(/Ejendomsnummer\s*\(\s*BFE-?nr\.?\s*\)\s*:\s*(\d{6,})/i);
+            if (m && m[1]) return m[1];
+
+            // Try no-space variant (new layout can concatenate words)
+            const ns = text.replace(/\s+/g, '');
+            m = ns.match(/Ejendomsnummer\(BFE-?nr\.?\):(\d{6,})/i);
+            if (m && m[1]) return m[1];
+
+            return undefined;
+        }
+        // Column mapping - always include Bygningsnr. first
+        const allColumns = [
+            'Bygningsnr.',
+            'Samlet bygningsareal',
+            'Samlet kælderareal',
+            'Samlet tagetageareal',
+            'Heraf udnyttet tagetage',
+            'Samlet andet areal',
+            'Bebygget areal'
+        ];
+
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const processBtn = document.getElementById('processBtn');
+        const oisLinkInput = document.getElementById('oisLinkInput');
+        const oisOpenPdfBtn = document.getElementById('oisOpenPdfBtn');
+        const oisFetchExtractBtn = document.getElementById('oisFetchExtractBtn');
+       const PROXY_BASE = 'https://ois-bbr-proxy.thelighty9.workers.dev';
+        const getProxyBase = () => PROXY_BASE;
+
+        const oisHint = document.getElementById('oisHint');
+        const status = document.getElementById('status');
+        const progress = document.getElementById('progress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        // Checkbox management
+        function toggleCheckbox(id) {
+            const ev = window.event;
+            if (ev && ev.stopPropagation) ev.stopPropagation();
+            const checkbox = document.getElementById(id);
+            checkbox.checked = !checkbox.checked;
+            updateCheckboxStyles();
+            updateProcessButton();
+        }
+
+        function updateCheckboxStyles() {
+            document.querySelectorAll('.column-checkbox').forEach(div => {
+                const checkbox = div.querySelector('input[type="checkbox"]');
+                if (checkbox.checked) {
+                    div.classList.add('checked');
+                } else {
+                    div.classList.remove('checked');
+                }
+            });
+        }
+
+        function selectAll() {
+            document.querySelectorAll('.column-checkbox input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+            updateCheckboxStyles();
+            updateProcessButton();
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('.column-checkbox input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+            updateCheckboxStyles();
+            updateProcessButton();
+        }
+
+        function getSelectedColumns() {
+            const selected = ['Bygningsnr.']; // Always include building number
+            document.querySelectorAll('.column-checkbox input[type="checkbox"]').forEach(cb => {
+                if (cb.checked) {
+                    selected.push(cb.value);
+                }
+            });
+            return selected;
+        }
+
+        // Initialize checkbox styles
+        updateCheckboxStyles();
+
+        
+        // OIS helper (open PDF by pasting an OIS link)
+        function extractBFEFromOisUrl(url) {
+            if (!url) return null;
+            // common pattern: https://ois.dk/search/<BFE>/...
+            let m = url.match(/\/search\/(\d{6,})\b/);
+            if (m && m[1]) return m[1];
+            // bfe query param
+            try {
+                const u = new URL(url);
+                const bfe = u.searchParams.get('bfe');
+                if (bfe && /^\d{6,}$/.test(bfe)) return bfe;
+            } catch (e) {}
+            // any long number in the url as fallback
+            m = url.match(/\b(\d{6,})\b/);
+            if (m && m[1]) return m[1];
+            return null;
+        }
+
+        if (oisOpenPdfBtn && oisLinkInput) {
+            oisOpenPdfBtn.addEventListener('click', () => {
+                const bfe = extractBFEFromOisUrl(oisLinkInput.value.trim());
+                if (!bfe) {
+                    if (oisHint) oisHint.textContent = 'Kunne ikke finde et BFE-nummer i linket. Tjek at det ligner https://ois.dk/search/10171611/...';
+                    return;
+                }
+                const pdfUrl = `https://ois.dk/bbrmeddelelse/get?bfe=${bfe}`;
+                if (oisHint) oisHint.textContent = `Åbner PDF: ${pdfUrl}`;
+                window.open(pdfUrl, '_blank', 'noopener');
+            });
+        }
+
+
+        // OIS: fetch PDF via proxy and add it to the file list, then auto-run preview
+        if (oisFetchExtractBtn && oisLinkInput) {
+            oisFetchExtractBtn.addEventListener('click', async () => {
+                const bfe = extractBFEFromOisUrl(oisLinkInput.value.trim());
+                if (!bfe) {
+                    if (oisHint) oisHint.textContent = 'Kunne ikke finde et BFE-nummer i linket. Tjek at det ligner https://ois.dk/search/10171611/...';
+                    return;
+                }
+
+                const proxyBase = getProxyBase();
+                if (!proxyBase) {
+                    if (oisHint) oisHint.textContent = 'Indtast jeres Cloudflare Worker proxy-URL og tryk Gem proxy først.';
+                    return;
+                }
+
+                const cleanBase = proxyBase.replace(/\/+$/, '');
+                const proxyUrl = `${cleanBase}/?bfe=${encodeURIComponent(bfe)}`;
+
+                try {
+                    oisFetchExtractBtn.disabled = true;
+                    oisFetchExtractBtn.style.opacity = '0.7';
+                    if (oisHint) oisHint.textContent = 'Henter PDF via proxy...';
+
+                    const res = await fetch(proxyUrl, { method: 'GET' });
+                    if (!res.ok) {
+                        const t = await res.text().catch(() => '');
+                        throw new Error(`Proxy-fejl (${res.status}): ${t.slice(0, 120)}`);
+                    }
+                    const ct = (res.headers.get('content-type') || '').toLowerCase();
+                    if (!ct.includes('pdf')) {
+                        // still try to read as binary, but warn
+                        console.warn('Proxy response content-type:', ct);
+                    }
+                    const buf = await res.arrayBuffer();
+                    // Validate that the response is actually a PDF (starts with %PDF)
+                    try {
+                        const u8 = new Uint8Array(buf);
+                        const head = String.fromCharCode(...u8.slice(0, 4));
+                        if (head !== '%PDF') {
+                            // Try to decode a short snippet for debugging (likely HTML error)
+                            let snippet = '';
+                            try { snippet = new TextDecoder('utf-8').decode(u8.slice(0, 200)); } catch (e) {}
+                            throw new Error('Proxy returnerede ikke en PDF. Start på svar: ' + (snippet || head));
+                        }
+                    } catch (e) {
+                        throw e;
+                    }
+
+                    const file = new File([buf], `bbr_${bfe}.pdf`, { type: 'application/pdf' });
+
+                    // Add to existing uploader list
+                    handleFiles([file]);
+
+                    // Auto-run preview if possible
+                    const hasSelectedColumns = document.querySelectorAll('.column-checkbox input[type="checkbox"]:checked').length > 0;
+                    if (!hasSelectedColumns) {
+                        if (oisHint) oisHint.textContent = 'PDF hentet. Vælg kolonner først, og tryk derefter Preview Data.';
+                        return;
+                    }
+
+                    if (oisHint) oisHint.textContent = 'PDF hentet. Indlæser...';
+                    // Trigger the same flow as clicking Preview Data
+                    processBtn.click();
+
+                } catch (err) {
+                    console.error(err);
+                    if (oisHint) oisHint.textContent = 'Kunne ikke hente PDF via proxy: ' + (err && err.message ? err.message : err);
+                } finally {
+                    oisFetchExtractBtn.disabled = false;
+                    oisFetchExtractBtn.style.opacity = '1';
+                }
+            });
+        }
+
+        // Upload area events
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            const pdfFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+            selectedFiles = [...selectedFiles, ...pdfFiles];
+            renderFileList();
+            updateProcessButton();
+        }
+
+        function renderFileList() {
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+
+            fileList.innerHTML = selectedFiles.map((file, index) => `
+                <div class="file-item">
+                    <span class="file-name">📄 ${file.name}</span>
+                    <span class="file-remove" onclick="removeFile(${index})">✕</span>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderFileList();
+            updateProcessButton();
+        }
+
+        function updateProcessButton() {
+            const hasSelectedColumns = document.querySelectorAll('.column-checkbox input[type="checkbox"]:checked').length > 0;
+            processBtn.disabled = !hasSelectedColumns || selectedFiles.length === 0;
+        }
+
+        // Main processing function
+        processBtn.addEventListener('click', async () => {
+            try {
+                if (!window.pdfjsLib) {
+                    showStatus('error', 'PDF.js kunne ikke indlæses. Det skyldes ofte at CDNs er blokeret på netværket (firma-sikkerhed).\n\nLøsning: Host pdf.min.js + pdf.worker.min.js sammen med siden (samme domæne) eller bed IT tillade cdnjs.cloudflare.com.');
+                    return;
+                }
+                showStatus('info', 'Behandler PDFer...');
+                showProgress(true);
+                processBtn.disabled = true;
+
+                const selectedColumns = getSelectedColumns();
+                const allData = [];
+                const grandTotals = [];
+
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    updateProgress((i / selectedFiles.length) * 100, `Behandler ${file.name}...`);
+
+                    const { buildings, sheetName } = await extractPDFData(file);
+                    
+                    // Filter columns based on user selection
+                    const filteredBuildings = buildings.map(building => {
+                        const filtered = {};
+                        selectedColumns.forEach(col => {
+                            filtered[col] = building[col] ||'';
+                        });
+                        return filtered;
+                    });
+
+                    // Calculate totals for this sheet (only from non-empty buildings)
+                    const totalRow = {};
+                    totalRow['Bygningsnr.'] = sheetName;
+                    
+                    selectedColumns.forEach(col => {
+                        if (col === 'Bygningsnr.') return;
+
+                        // Only sum real area columns. "Anden data" + quality columns should NOT be summed.
+                        if (typeof SUMMABLE_COLS !== 'undefined' && SUMMABLE_COLS.has(col)) {
+                            const sum = filteredBuildings.reduce((acc, b) => {
+                                const v = b[col];
+                                const val = (typeof v === 'number') ? v : (parseInt(v, 10) || 0);
+                                return acc + val;
+                            }, 0);
+                            totalRow[col] = sum;
+                            return;
+                        }
+
+                        // Quality columns
+                        if (col === '_Confidence') {
+                            const vals = filteredBuildings
+                                .map(b => (typeof b[col] === 'number' ? b[col] : parseInt(b[col], 10)))
+                                .filter(v => typeof v === 'number' && !isNaN(v));
+                            totalRow[col] = vals.length ? Math.round(vals.reduce((a, x) => a + x, 0) / vals.length) : '-';
+                            return;
+                        }
+                        if (col === '_Warnings') {
+                            totalRow[col] = '-';
+                            return;
+                        }
+
+                        // Anden data / text columns: do not sum
+                        totalRow[col] = '-';
+                    });
+
+                    // Calculate row total
+                    const rowTotal = Object.keys(totalRow)
+                        .filter(k => k !== 'Bygningsnr.' && k !== 'Total')
+                        .reduce((acc, k) => acc + ((typeof SUMMABLE_COLS !== 'undefined' && SUMMABLE_COLS.has(k)) ? (parseInt(totalRow[k], 10) || 0) : 0), 0);
+                    totalRow['Total'] = rowTotal;
+
+                    grandTotals.push(totalRow);
+
+                    // Add total row to buildings
+                    filteredBuildings.push(totalRow);
+
+                    allData.push({
+                        sheetName: sheetName,
+                        data: filteredBuildings
+                    });
+                }
+
+                updateProgress(95, 'Forbereder preview...');
+
+                // Create grand total sheet
+                const finalTotalRow = {};
+                finalTotalRow['Bygningsnr.'] = 'Final Total';
+                
+                selectedColumns.forEach(col => {
+                    if (col === 'Bygningsnr.') return;
+
+                    if (typeof SUMMABLE_COLS !== 'undefined' && SUMMABLE_COLS.has(col)) {
+                        const sum = grandTotals.reduce((acc, row) => acc + (parseInt(row[col], 10) || 0), 0);
+                        finalTotalRow[col] = sum;
+                        return;
+                    }
+
+                    if (col === '_Confidence') {
+                        const vals = grandTotals
+                            .map(r => (typeof r[col] === 'number' ? r[col] : parseInt(r[col], 10)))
+                            .filter(v => typeof v === 'number' && !isNaN(v));
+                        finalTotalRow[col] = vals.length ? Math.round(vals.reduce((a, x) => a + x, 0) / vals.length) : '-';
+                        return;
+                    }
+
+                    if (col === '_Warnings') {
+                        finalTotalRow[col] = '-';
+                        return;
+                    }
+
+                    finalTotalRow[col] = '-';
+                });
+
+                const finalRowTotal = Object.keys(finalTotalRow)
+                    .filter(k => k !== 'Bygningsnr.' && k !== 'Total')
+                    .reduce((acc, k) => acc + ((typeof SUMMABLE_COLS !== 'undefined' && SUMMABLE_COLS.has(k)) ? (parseInt(finalTotalRow[k], 10) || 0) : 0), 0);
+                finalTotalRow['Total'] = finalRowTotal;
+
+                grandTotals.push(finalTotalRow);
+
+                // Store data globally
+                processedData = {
+                    allData: allData,
+                    grandTotals: grandTotals,
+                    selectedColumns: selectedColumns
+                };
+
+                updateProgress(100, 'Færdig!');
+                showStatus('success', `✓ Data behandlet! ${selectedFiles.length} PDFer klar til preview.`);
+                
+                setTimeout(() => {
+                    showProgress(false);
+                    processBtn.disabled = false;
+                    showPreview();
+                }, 500);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('error', 'Fejl: ' + error.message);
+                showProgress(false);
+                processBtn.disabled = false;
+            }
+        });
+
+        async function extractPDFData(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            
+            let allText = '';
+            
+            // Extract text from all pages
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                let pageText = textContent.items.map(item => item.str).join(' ');
+                pageText = normalizeText(pageText);
+                allText += pageText + '\n';
+            }
+
+            // Extract sheet name (BBR address)
+            let sheetName = 'Unknown';
+
+            // In newer BBR PDFs the address often appears as "BBR-adresse: <vejnavn> <nr>, <postnr> <by>"
+            // We only want the short street + number for the tab name (e.g. "Seminarievej 23")
+            const addrPatterns = [
+              /BBR[-\s]?adresse\s*:\s*([A-Za-zÆØÅæøå0-9 .,'-]+?\d+[A-Za-z]?)(?=\s*,|\s+\d{4}\s|\s+Postnr\.|\s+By\b|$)/i,
+              /Oplysninger\s*om\s*grund\s*Adresse\s*:\s*([A-Za-zÆØÅæøå0-9 .,'-]+?\d+[A-Za-z]?)(?=\s*,|\s+\d{4}\s|$)/i,
+              /Oplysningeromgrund\s*Adresse\s*:\s*([A-Za-zÆØÅæøå0-9 .,'-]+?\d+[A-Za-z]?)(?=\s*,|\s+\d{4}\s|$)/i,
+              /BeliggenhedAdresse\s*:\s*([A-Za-zÆØÅæøå0-9 .,'-]+?\d+[A-Za-z]?)(?=\s*,|\s+\d{4}\s|$)/i,
+              /Adresse\s*:\s*([A-Za-zÆØÅæøå0-9 .,'-]+?\d+[A-Za-z]?)(?=\s*,|\s+\d{4}\s|$)/i
+            ];
+
+            for (const pat of addrPatterns) {
+              const m = allText.match(pat);
+              if (m && m[1]) {
+                sheetName = m[1].replace(/\s+/g, ' ').trim();
+                break;
+              }
+            }
+
+            // Keep tab names reasonably short and Excel-friendly
+            sheetName = sheetName.replace(/[\\/:\?\*\[\]]/g, '').trim();
+            if (sheetName.length > 60) sheetName = sheetName.slice(0, 60).trim();
+
+            
+            try { const ab = document.getElementById('addressBadge'); if (ab) ab.textContent = (sheetName && sheetName !== 'Unknown') ? sheetName : 'Ukendt'; } catch(e) {}
+// Parse building data
+            const bfe = extractBFE(allText);
+
+            // Parse building data
+            const buildings = parseBuildings(allText, { bfe });
+
+            return { buildings, sheetName };
+        }
+
+        
+        function parseBuildings(text, meta) {
+            const buildings = [];
+
+            // Collect building markers from both old and new layouts
+            // Old: "Bygningsnr.: 7"
+            // New: "Bygning 7"
+            const markers = [];
+            const reOld = /Bygningsnr\.\s*:\s*(\d+)/g;
+            const reNew = /\bBygning\s+(\d+)\b/g;
+
+            let m;
+            while ((m = reOld.exec(text)) !== null) {
+                markers.push({ num: parseInt(m[1], 10), pos: m.index });
+            }
+            while ((m = reNew.exec(text)) !== null) {
+                markers.push({ num: parseInt(m[1], 10), pos: m.index });
+            }
+
+            // sort by position and dedupe near-duplicates
+            markers.sort((a, b) => a.pos - b.pos);
+            const deduped = [];
+            for (const mk of markers) {
+                const last = deduped[deduped.length - 1];
+                if (last && last.num === mk.num && Math.abs(last.pos - mk.pos) < 80) continue;
+                deduped.push(mk);
+            }
+
+            const debugOn = document.getElementById('debugConsole')?.checked;
+            if (debugOn) {
+                console.log('=== PARSE DEBUG ===');
+                console.log('Building markers found:', deduped.map(b => b.num));
+            }
+
+            function matchFirstNumber(section, patterns) {
+                for (const pat of patterns) {
+                    const mm = section.match(pat);
+                    if (mm && mm[1] !== undefined) return parseInt(mm[1], 10);
+                }
+                return undefined;
+            }
+
+            function matchTextField(section, patterns) {
+                for (const pat of patterns) {
+                    const mm = section.match(pat);
+                    if (mm && mm[1]) {
+                        let v = mm[1].trim();
+                        // Cut off if the capture accidentally includes the next label (new PDF layout often concatenates words)
+                        const stopTokens = [
+                            'supplerendeydervægsmateriale',
+                            'supplerendetagdækningsmateriale',
+                            'varmeforsyning',
+                            'bygningensvarmeinstallation',
+                            'opvarmningsmiddel',
+                            'energiplan',
+                            'ejerforhold',
+                            'kildetil',
+                            'bbr-meddelelse',
+                            'udskriftsdato',
+                            'side'
+                        ];
+                        const vLower = v.toLowerCase();
+                        let cutIdx = v.length;
+                        for (const tok of stopTokens) {
+                            const j = vLower.indexOf(tok);
+                            if (j !== -1 && j < cutIdx) cutIdx = j;
+                        }
+                        v = v.slice(0, cutIdx).trim();
+                        // remove trailing punctuation
+                        v = v.replace(/[\s,;:.-]+$/g, '').trim();
+                        return v || undefined;
+                    }
+                }
+                return undefined;
+            }
+
+            function pickClosestYear(section, anchorIdxInSection) {
+                // Prefer "Sikker Opførelsesår" then "Opførelsesår"
+                const yearMatches = [];
+                const yrRe = /(Sikker\s+Opførelsesår|Opførelsesår)\s*:\s*(\d{4})/gi;
+                let ym;
+                while ((ym = yrRe.exec(section)) !== null) {
+                    yearMatches.push({ label: ym[1], year: parseInt(ym[2], 10), idx: ym.index });
+                }
+                if (!yearMatches.length) return undefined;
+
+                // Prefer matches BEFORE anchor, closest distance; else closest after
+                let best = null;
+                for (const y of yearMatches) {
+                    const dist = y.idx - anchorIdxInSection;
+                    const score = (dist <= 0 ? Math.abs(dist) : 100000 + dist) + (String(y.label).toLowerCase().includes('sikker') ? -50 : 0);
+                    if (!best || score < best.score) best = { ...y, score };
+                }
+                return best ? best.year : undefined;
+            }
+
+                        // Pre-scan Bebygget areal in the FULL text and assign each match to the nearest building marker
+            // by looking for the last "Bygning X" / "Bygningsnr.: X" within a window before the match.
+            const bebyggetByBuilding = new Map();
+            const bebyggetMatches = [];
+            const bebyggetRe = /(Bebygget\s*areal|Bebyggetareal)\s*(?::|\s)\s*(\d{1,6})(?:\s*(?:m2|m²))?/gi;
+            let bm;
+            while ((bm = bebyggetRe.exec(text)) !== null) {
+                bebyggetMatches.push({ idx: bm.index, val: parseInt(bm[2], 10) });
+            }
+            for (const b of bebyggetMatches) {
+                const lookBackStart = Math.max(0, b.idx - 900);
+                const windowText = text.substring(lookBackStart, b.idx);
+                let owner = null;
+
+                // find LAST marker in the lookback window
+                const markerRe = /(Bygningsnr\.\s*:\s*(\d+))|\bBygning\s+(\d+)\b/gi;
+                let mm;
+                while ((mm = markerRe.exec(windowText)) !== null) {
+                    owner = parseInt(mm[2] || mm[3], 10);
+                }
+
+                if (owner !== null && !Number.isNaN(owner)) {
+                    // If multiple values map to same building, keep the one closest to its marker later (overwrite is fine).
+                    bebyggetByBuilding.set(owner, b.val);
+                }
+            }
+
+for (let i = 0; i < deduped.length; i++) {
+                const cur = deduped[i];
+                const prev = deduped[i - 1];
+                const next = deduped[i + 1];
+
+                const startPos = prev ? Math.floor((prev.pos + cur.pos) / 2) : 0;
+                const endPos = next ? Math.floor((cur.pos + next.pos) / 2) : text.length;
+                const section = text.substring(startPos, endPos);
+
+                const anchorIdx = cur.pos - startPos;
+
+                const building = { 'Bygningsnr.': cur.num };
+
+                // Property-level field (same for all buildings)
+                if (meta && meta.bfe) building['Ejendomsnummer (BFE-nr.)'] = meta.bfe;
+
+
+                // --- Areal-felter (old + new labels) ---
+                building['Samlet bygningsareal'] = matchFirstNumber(section, [
+                    /Samlet bygningsareal[^\d]{0,40}(\d{1,6})/i,
+                    /Samletbygningsareal[^\d]{0,40}(\d{1,6})/i,
+                    /Bygningens samlede etageareal[^\d]{0,40}(\d{1,6})/i,
+                    /Bygningenssamledeetageareal[^\d]{0,40}(\d{1,6})/i,
+                ]);
+
+                building['Samlet kælderareal'] = matchFirstNumber(section, [
+                    /Samlet kælderareal[^\d]{0,30}(\d{1,6})/i,
+                    /Samletkælderareal[^\d]{0,30}(\d{1,6})/i,
+                    /Kælderens areal[^\d]{0,30}(\d{1,6})/i,
+                    /Kælderensareal[^\d]{0,30}(\d{1,6})/i,
+                ]);
+
+                building['Samlet tagetageareal'] = matchFirstNumber(section, [
+                    /Samlet tagetageareal[^\d]{0,30}(\d{1,6})/i,
+                    /Samlettagetageareal[^\d]{0,30}(\d{1,6})/i,
+                    /Tagetagens areal[^\d]{0,30}(\d{1,6})/i,
+                    /Tagetagensareal[^\d]{0,30}(\d{1,6})/i,
+                    /Etagerens areal[^\d]{0,30}(\d{1,6})/i,
+                    /Etagerensareal[^\d]{0,30}(\d{1,6})/i,
+                ]);
+
+                building['Heraf udnyttet tagetage'] = matchFirstNumber(section, [
+                    /Heraf udnyttet tagetage[^\d]{0,30}(\d{1,6})/i,
+                    /Herafudnyttettagetage[^\d]{0,30}(\d{1,6})/i,
+                    /Tagetagens udnyttede areal[^\d]{0,30}(\d{1,6})/i,
+                    /Tagetagensudnyttedeareal[^\d]{0,30}(\d{1,6})/i,
+                    /heraf\s*Tagetagens\s*udnyttede\s*areal[^\d]{0,30}(\d{1,6})/i,
+                    /herafTagetagensudnyttedeareal[^\d]{0,30}(\d{1,6})/i,
+                ]);
+
+                // Strict: avoid picking the "2" in "m2"
+                const andet = section.match(/Samlet andet areal\s*:\s*(\d{1,6})(?!\s*(?:m2|m²))/i);
+                if (andet) building['Samlet andet areal'] = parseInt(andet[1], 10);
+
+                                // Bebygget areal (new layout can be out-of-order). Prefer the pre-scanned mapping,
+                // otherwise fall back to matching inside this building section.
+                if (bebyggetByBuilding.has(cur.num)) {
+                    building['Bebygget areal'] = bebyggetByBuilding.get(cur.num);
+                } else {
+                    const beb = section.match(/Bebygget\s*areal\s*:\s*(\d{1,6})(?:\s*(?:m2|m²))?/i)
+                             || section.match(/Bebygget\s*areal\s+(\d{1,6})(?:\s*(?:m2|m²))?/i)
+                             || section.match(/Bebyggetareal\s*:\s*(\d{1,6})(?:\s*(?:m2|m²))?/i)
+                             || section.match(/Bebyggetareal\s+(\d{1,6})(?:\s*(?:m2|m²))?/i);
+                    if (beb) building['Bebygget areal'] = parseInt(beb[1], 10);
+                }
+
+                // If other areal fields exist, bebygget is fallback
+                const hasOtherAreal = ['Samlet bygningsareal','Samlet kælderareal','Samlet tagetageareal','Heraf udnyttet tagetage','Samlet andet areal']
+                    .some(k => building[k] !== undefined);
+                if (hasOtherAreal && building['Bebygget areal'] !== undefined) {
+                    delete building['Bebygget areal'];
+                }
+
+// --- Anden data ---
+                building['Opførelsesår'] = pickClosestYear(section, anchorIdx);
+
+                building['Antal etager u. kælder & tagetage'] = matchFirstNumber(section, [
+                    // Gammel label (med mellemrum)
+                    /Antal etager u\.\s*kælder\s*&\s*tagetage[^\d]{0,20}(\d{1,2})/i,
+                    /Antal etager[^\d]{0,20}(\d{1,2})/i,
+                    // Ny layout / normaliseret tekst (uden mellemrum)
+                    /Antaletageru\.?(?:kaelder|kælder)\s*&\s*tagetage[^\d]{0,20}(\d{1,2})/i,
+                    /Antaletager[^\d]{0,20}(\d{1,2})/i,
+                ]);
+
+                building['Ydervæggens materiale'] = matchTextField(section, [
+                    /Ydervæggens materiale\s*:\s*([^]+?)(?=\s{2,}|Tagdækningsmateriale|Varmeinstallation|Energiplan|$)/i,
+                    /Ydervægsmateriale\s*:\s*([^]+?)(?=\s{2,}|Tagdækningsmateriale|Varmeinstallation|Energiplan|$)/i,
+                ]);
+
+                building['Tagdækningsmateriale'] = matchTextField(section, [
+                    /Tagdækningsmateriale\s*:\s*([^]+?)(?=\s{2,}|Varmeinstallation|Energiplan|$)/i,
+                ]);
+
+                // --- Quality ---
+                const warnOn = document.getElementById('qWarn')?.checked;
+                const confOn = document.getElementById('qConf')?.checked;
+
+                if (warnOn || confOn) {
+                    const warnings = [];
+                    let conf = 100;
+
+                    const arealKeys = ['Samlet bygningsareal','Samlet kælderareal','Samlet tagetageareal','Heraf udnyttet tagetage','Samlet andet areal'];
+                    const foundAreal = arealKeys.some(k => building[k] !== undefined);
+                    if (!foundAreal && building['Bebygget areal'] === undefined) {
+                        warnings.push('Ingen areal-felter fundet');
+                        conf = Math.min(conf, 50);
+                    }
+                    if (!foundAreal && building['Bebygget areal'] !== undefined) {
+                        warnings.push('Kun "Bebygget areal" fundet (fallback)');
+                        conf = Math.min(conf, 80);
+                    }
+
+                    if (warnOn) building['_Warnings'] = warnings.length ? warnings.join(' | ') : '-';
+                    if (confOn) building['_Confidence'] = conf;
+                }
+
+                if (debugOn) {
+                    console.log(`Building ${cur.num} (block length: ${section.length}):`);
+                    console.log(`First 260 chars: ${section.substring(0, 260)}`);
+                }
+
+                buildings.push(building);
+            }
+
+            
+            // Dedupe: the new layout sometimes contains repeated "Bygning X" markers.
+            // Keep/merge the entry with the most extracted fields and drop empty duplicates.
+            const byNum = new Map();
+
+            function valueIsPresent(v) {
+                if (v === undefined || v === null) return false;
+                if (typeof v === 'string') {
+                    const t = v.trim();
+                    return t !== '' && t !== '-' && t.toLowerCase() !== 'unknown';
+                }
+                if (typeof v === 'number') {
+                    // Treat 0 as "not present" for these extracted fields (0s are usually artifacts)
+                    return v > 0;
+                }
+                return false;
+            }
+
+            function scoreBuilding(b) {
+                let s = 0;
+                for (const [k, v] of Object.entries(b)) {
+                    if (k === 'Bygningsnr.') continue;
+                    if (k.startsWith('_')) continue;
+                    if (valueIsPresent(v)) s += 1;
+                }
+                return s;
+            }
+
+            for (const b of buildings) {
+                const num = b['Bygningsnr.'];
+                const sc = scoreBuilding(b);
+                if (!byNum.has(num)) {
+                    if (sc > 0) byNum.set(num, { b, sc });
+                    else byNum.set(num, { b, sc }); // keep for now; may be replaced by a better one later
+                    continue;
+                }
+                const cur = byNum.get(num);
+
+                // Pick primary (higher score)
+                let primary = cur.b, secondary = b;
+                let pScore = cur.sc, sScore = sc;
+                if (sScore > pScore) {
+                    primary = b; secondary = cur.b;
+                    pScore = sScore; sScore = cur.sc;
+                }
+
+                // Merge: fill missing fields in primary from secondary
+                for (const [k, v] of Object.entries(secondary)) {
+                    if (k === 'Bygningsnr.') continue;
+                    if (!valueIsPresent(primary[k]) && valueIsPresent(v)) {
+                        primary[k] = v;
+                    }
+                }
+
+                byNum.set(num, { b: primary, sc: scoreBuilding(primary) });
+            }
+
+            // Drop entries that still have no extracted fields at all
+            const out = Array.from(byNum.values())
+                .map(x => x.b)
+                .filter(b => scoreBuilding(b) > 0)
+                .sort((a, b) => a['Bygningsnr.'] - b['Bygningsnr.']);
+
+            return out;
+
+        }
+
+        function showStatus(type, message) {
+            status.className = 'status ' + type;
+            status.textContent = message;
+            try { const sb = document.getElementById('statusBadge'); if (sb) sb.textContent = message; } catch(e) {}
+        }
+
+        function showProgress(show) {
+            progress.style.display = show ? 'block' : 'none';
+            if (!show) {
+                progressFill.style.width = '0%';
+            }
+        }
+
+        function updateProgress(percent, text) {
+            progressFill.style.width = percent + '%';
+            progressText.textContent = text;
+        }
+
+        // Preview Modal Functions
+        function showPreview() {
+            if (!processedData) return;
+
+            const modal = document.getElementById('previewModal');
+            const tabsContainer = document.getElementById('sheetTabs');
+            const contentsContainer = document.getElementById('sheetContents');
+
+            // Clear previous content
+            tabsContainer.innerHTML = '';
+            contentsContainer.innerHTML = '';
+
+            // Count duplicates so tabs become readable: "Adresse", "Adresse (2)", ...
+            const nameCounts = new Map();
+
+            // Create tabs and content for each sheet
+            processedData.allData.forEach((sheet, index) => {
+                const baseName = (sheet.sheetName || 'Unknown').trim() || 'Unknown';
+                const prev = nameCounts.get(baseName) || 0;
+                const next = prev + 1;
+                nameCounts.set(baseName, next);
+                const tabLabel = next > 1 ? `${baseName} (${next})` : baseName;
+
+                // Create tab
+                const tab = document.createElement('button');
+                tab.className = 'sheet-tab' + (index === 0 ? ' active' : '');
+                tab.textContent = tabLabel;
+                tab.onclick = () => switchTab(index);
+                tabsContainer.appendChild(tab);
+
+                // Create content
+                const content = document.createElement('div');
+                content.className = 'sheet-content' + (index === 0 ? ' active' : '');
+                content.id = 'sheet-' + index;
+                content.innerHTML = generateTableHTML(sheet.data, processedData.selectedColumns, sheet.sheetName || baseName);
+                contentsContainer.appendChild(content);
+            });
+
+            // Add Samlet tab
+            const grandIndex = processedData.allData.length;
+
+            const grandTab = document.createElement('button');
+            grandTab.className = 'sheet-tab';
+            grandTab.textContent = 'Samlet';
+            grandTab.onclick = () => switchTab(grandIndex);
+            tabsContainer.appendChild(grandTab);
+
+            const grandContent = document.createElement('div');
+            grandContent.className = 'sheet-content';
+            grandContent.id = 'sheet-' + grandIndex;
+            grandContent.innerHTML = generateTableHTML(processedData.grandTotals, processedData.selectedColumns, 'Samlet');
+            contentsContainer.appendChild(grandContent);
+
+            modal.classList.add('show');
+        }
+
+        function closePreview() {
+            const modal = document.getElementById('previewModal');
+            modal.classList.remove('show');
+        }
+
+        function switchTab(index) {
+            // Update tab styles
+            document.querySelectorAll('.sheet-tab').forEach((tab, i) => {
+                if (i === index) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            // Update content visibility
+            document.querySelectorAll('.sheet-content').forEach((content, i) => {
+                if (i === index) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+
+        
+        function openGrandTotal() {
+            if (!processedData) {
+                // If data not processed yet, open preview after processing
+                const btn = document.getElementById('processButton');
+                if (btn && !btn.disabled) {
+                    btn.click();
+                    // showPreview() will run after processing finishes (processFiles calls it)
+                    // We can't reliably hook that here without rewriting, so just return.
+                }
+                return;
+            }
+            showPreview();
+            // Samlet tab is the last one (after all addresses)
+            switchTab(processedData.allData.length);
+        }
+
+
+        const ANDEN_DATA_COLS = new Set([
+            'Opførelsesår',
+            'Antal etager u. kælder & tagetage',
+            'Ydervæggens materiale',
+            'Tagdækningsmateriale',
+            'Ejendomsnummer (BFE-nr.)'
+        ]);
+
+        const QUALITY_COLS = new Set(['_Warnings','_Confidence']);
+
+        const SUMMABLE_COLS = new Set([
+            'Samlet bygningsareal',
+            'Samlet kælderareal',
+            'Samlet tagetageareal',
+            'Heraf udnyttet tagetage',
+            'Samlet andet areal',
+            'Bebygget areal'
+        ]);
+
+        function generateTableHTML(data, columns, sheetName) {
+            if (!data || data.length === 0) {
+                return '<p>Ingen data</p>';
+            }
+
+            // Hide "Anden data" columns in Samlet
+            let cols = columns.slice();
+            if (sheetName === 'Samlet') {
+                cols = cols.filter(c => !ANDEN_DATA_COLS.has(c));
+            }
+
+            // Order: base cols, Total, then Anden data cols (and quality cols last)
+            const andenCols = cols.filter(c => ANDEN_DATA_COLS.has(c));
+            const qualityCols = cols.filter(c => QUALITY_COLS.has(c));
+            const baseCols = cols.filter(c => !ANDEN_DATA_COLS.has(c) && !QUALITY_COLS.has(c));
+
+            let html = '<table class="preview-table"><thead><tr>';
+
+            baseCols.forEach(col => { html += `<th>${col}</th>`; });
+            html += '<th>Total (row sum)</th>';
+            andenCols.forEach(col => { html += `<th>${col}</th>`; });
+            qualityCols.forEach(col => { html += `<th>${col}</th>`; });
+
+            html += '</tr></thead><tbody>';
+
+            data.forEach((row, index) => {
+                const isTotal = index === data.length - 1 || typeof row['Bygningsnr.'] === 'string';
+                const rowClass = isTotal ? 'total-row' : '';
+
+                let rowSum = 0;
+                baseCols.forEach(col => {
+                    if (SUMMABLE_COLS.has(col)) {
+                        const val = row[col];
+                        if (typeof val === 'number' && !isNaN(val)) rowSum += val;
+                    }
+                });
+
+                html += `<tr class="${rowClass}">`;
+
+                baseCols.forEach(col => {
+                    let val = row[col];
+                    if (val === undefined || val === null || val === '') val = '-';
+                    html += `<td>${val}</td>`;
+                });
+
+                html += `<td class="row-total">${rowSum}</td>`;
+
+                andenCols.forEach(col => {
+                    let val = row[col];
+                    if (isTotal) val = '-';
+                    if (val === undefined || val === null || val === '') val = '-';
+                    html += `<td>${val}</td>`;
+                });
+
+                qualityCols.forEach(col => {
+                    let val = row[col];
+                    if (val === undefined || val === null || val === '') val = '-';
+                    html += `<td>${val}</td>`;
+                });
+
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            return html;
+        }
+
+        
+        
+        function downloadExcel() {
+            if (!processedData) return;
+
+            const wb = XLSX.utils.book_new();
+
+            // Make Excel-safe, unique sheet names (max 31 chars)
+            const used = new Set();
+            function makeSheetName(name) {
+                let base = (name || 'Unknown').toString().trim() || 'Unknown';
+                // Remove characters Excel doesn't like in sheet names: : \ / ? * [ ]
+                base = base.replace(/[:\\\/\?\*\[\]]/g, ' ');
+                base = base.replace(/\s+/g, ' ').trim();
+                if (!base) base = 'Unknown';
+
+                // Reserve space for suffix
+                let candidate = base.substring(0, 31);
+                let n = 1;
+                while (used.has(candidate)) {
+                    n += 1;
+                    const suffix = ` (${n})`;
+                    const maxBase = 31 - suffix.length;
+                    candidate = base.substring(0, Math.max(1, maxBase)).trim() + suffix;
+                }
+                used.add(candidate);
+                return candidate;
+            }
+
+            // Add individual sheets
+            processedData.allData.forEach(sheet => {
+                const ws = XLSX.utils.json_to_sheet(sheet.data || []);
+                const safeName = makeSheetName(sheet.sheetName);
+                XLSX.utils.book_append_sheet(wb, ws, safeName);
+            });
+
+            // Add grand total sheet (unique name too)
+            const grandTotalWs = XLSX.utils.json_to_sheet(processedData.grandTotals || []);
+            XLSX.utils.book_append_sheet(wb, grandTotalWs, makeSheetName('Samlet'));
+
+            XLSX.writeFile(wb, 'bbr_data.xlsx');
+
+            showStatus('success', '✓ Excel fil downloadet!');
+            closePreview();
+        }
+
+        // Close modal when clicking outside when clicking outside when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target === modal) {
+                closePreview();
+            }
+        }
+    </script>
+
+</body>
+</html>
